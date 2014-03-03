@@ -5,9 +5,33 @@ module('integration tests', {
         ajaxUrl = undefined;
         ajaxType = undefined;
         ajaxHash = undefined;
-        speakers_json = [{"id": 9, "name": "first", "session": 1}, {"id": 4, "name": "last", "session": 1}];
-        ratings_json = [{"id": 8, "score": 10, "feedback": "nice", "session": 1}];
-        tags_json = [{"id": 7, "description": "done"}];
+        speakers_json = {
+            "success": true,
+            "message": "Record(s) Found",
+            "data": {
+                "totalCount": "2",
+                "work": [
+                    {"id": 9, "name": "first", "session": 1},
+                    {"id": 4, "name": "last", "session": 1}
+                ]
+            }
+        };
+        ratings_json = {
+            "success": true,
+            "message": "Record(s) Found",
+            "data": {
+                "totalCount": "1",
+                "rating": [{"id": 8, "score": 10, "feedback": "nice", "session": 1}]
+            }
+        };
+        tags_json = {
+            "success": true,
+            "message": "Record(s) Found",
+            "data": {
+                "totalCount": "1",
+                "tag": [{"id": 7, "description": "done"}]
+            }
+        };
         App.reset();
     },
     teardown: function() {
@@ -16,8 +40,15 @@ module('integration tests', {
 });
 
 test('arrays as result of transform should not be interpreted as embedded records', function() {
-    var json = [{"id": 1, "config": "[\"ember\",\"is\",\"neato\"]"}];
-    stubEndpointForHttpRequest('/api/preserializeds/', json);
+    var json = {
+        "success": true,
+        "message": "Record(s) Found",
+        "data": {
+            "totalCount": "1",
+            "preserialized": [{"id": 1, "config": "[\"ember\",\"is\",\"neato\"]"}]
+        }
+    };
+    stubEndpointForHttpRequest('/api/preserialized/', json);
     visit("/preserialized").then(function() {
         var divs = find("div.item").length;
         equal(divs, 3, "found " + divs + " divs");
@@ -27,8 +58,15 @@ test('arrays as result of transform should not be interpreted as embedded record
 });
 
 test('attribute transforms are applied', function() {
-    var json = [{"id": 1, "transformed": "blah blah"}];
-    stubEndpointForHttpRequest('/api/transformers/', json);
+    var json = {
+        "success": true,
+        "message": "Record(s) Found",
+        "data": {
+            "totalCount": "1",
+            "transformer": [{"id": 1, "transformed": "blah blah"}]
+        }
+    };
+    stubEndpointForHttpRequest('/api/transformer/', json);
     visit("/transformers").then(function() {
         var spans = find("span").length;
         equal(spans, 1, "found " + spans + " spans");
@@ -38,8 +76,15 @@ test('attribute transforms are applied', function() {
 });
 
 test('models with camelCase converted to underscore urls', function() {
-    var json = [{"id": 1, "test": "foobar"}];
-    stubEndpointForHttpRequest('/api/camel_urls/', json);
+    var json = {
+        "success": true,
+        "message": "Record(s) Found",
+        "data": {
+            "totalCount": "1",
+            "camel_url": [{"id": 1, "test": "foobar"}]
+        }
+    };
+    stubEndpointForHttpRequest('/api/camel_url/', json);
     visit("/camelUrls").then(function() {
         var spans = find("span").length;
         equal(spans, 1, "found " + spans + " spans");
@@ -49,9 +94,16 @@ test('models with camelCase converted to underscore urls', function() {
 });
 
 test('keys with underscores converted to camelCase', function() {
-    stubEndpointForHttpRequest('/api/camels/1/camel_case_relationship/', tags_json);
-    var json = [{"id": 1, "camel_case_attribute": "foo", "camel_case_relationship": [7]}];
-    stubEndpointForHttpRequest('/api/camels/', json);
+    stubEndpointForHttpRequest('/api/camel/1/camel_case_relationship/', tags_json);
+    var json = {
+        "success": true,
+        "message": "Record(s) Found",
+        "data": {
+            "totalCount": "1",
+            "camel": [{"id": 1, "camel_case_attribute": "foo", "camel_case_relationship": [7]}]
+        }
+    };
+    stubEndpointForHttpRequest('/api/camel/', json);
     visit("/camels").then(function() {
         var spans = find("span").length;
         equal(spans, 2, "found " + spans + " spans");
@@ -63,8 +115,16 @@ test('keys with underscores converted to camelCase', function() {
 });
 
 test('ajax response with 1 session yields table with 1 row', function() {
-    var json = [{"id": 1, "name": "foo", "room": "bar", "desc": "test", "speakers": [], "ratings": [], "tags": []}];
-    stubEndpointForHttpRequest('/api/sessions/', json);
+    var json = {
+        "success": true,
+        "message": "Record(s) Found",
+        "data": {
+            "totalCount": "1",
+            "session": [{"id": 1, "name": "foo", "room": "bar", "desc": "test",
+                            "speakers": [], "ratings": [], "tags": []}]
+        }
+    };
+    stubEndpointForHttpRequest('/api/session/', json);
     visit("/sessions").then(function() {
         var rows = find("table tr").length;
         equal(rows, 6, "table had " + rows + " rows");
@@ -74,7 +134,15 @@ test('ajax response with 1 session yields table with 1 row', function() {
 });
 
 test('ajax response with no session records yields empty table', function() {
-    stubEndpointForHttpRequest('/api/sessions/', []);
+    var json = {
+        success: false,
+        message: "No Record(s) Found",
+        data: {
+            totalCount: "0",
+            session: [ ]
+        }
+    };
+    stubEndpointForHttpRequest('/api/session/', json);
     visit("/sessions").then(function() {
         var rows = find("table tr").length;
         equal(rows, 0, "table had " + rows + " rows");
@@ -82,11 +150,19 @@ test('ajax response with no session records yields empty table', function() {
 });
 
 test('ajax response with async hasMany relationship renders correctly', function() {
-    stubEndpointForHttpRequest('/api/sessions/1/speakers/', speakers_json);
-    stubEndpointForHttpRequest('/api/sessions/1/ratings/', ratings_json);
-    stubEndpointForHttpRequest('/api/sessions/1/tags/', tags_json);
-    var json = [{"id": 1, "name": "foo", "room": "bar", "desc": "test", "speakers": [9,4], "ratings": [8], "tags": [7]}];
-    stubEndpointForHttpRequest('/api/sessions/', json);
+    stubEndpointForHttpRequest('/api/session/1/speakers/', speakers_json);
+    stubEndpointForHttpRequest('/api/session/1/ratings/', ratings_json);
+    stubEndpointForHttpRequest('/api/session/1/tags/', tags_json);
+    var json = {
+        "success": true,
+        "message": "Record(s) Found",
+        "data": {
+            "totalCount": "1",
+            "session": [{"id": 1, "name": "foo", "room": "bar", "desc": "test",
+                            "speakers": [9,4], "ratings": [8], "tags": [7]}]
+        }
+    };
+    stubEndpointForHttpRequest('/api/session/', json);
     visit("/sessions").then(function() {
         //speakers
         var speakers = find("table td.speaker").length;
@@ -109,12 +185,29 @@ test('ajax response with async hasMany relationship renders correctly', function
 });
 
 test('ajax response for single session will render correctly', function() {
-    stubEndpointForHttpRequest('/api/sessions/1/speakers/', speakers_json);
-    stubEndpointForHttpRequest('/api/sessions/1/ratings/', ratings_json);
-    stubEndpointForHttpRequest('/api/sessions/1/tags/', tags_json);
-    var json = {"id": 1, "name": "foo", "room": "bar", "desc": "test", "speakers": [9,4], "ratings": [8], "tags": [7]};
-    stubEndpointForHttpRequest('/api/sessions/', [json]);
-    stubEndpointForHttpRequest('/api/sessions/1/', json);
+    stubEndpointForHttpRequest('/api/session/1/speakers/', speakers_json);
+    stubEndpointForHttpRequest('/api/session/1/ratings/', ratings_json);
+    stubEndpointForHttpRequest('/api/session/1/tags/', tags_json);
+    var json = {
+        "success": true,
+        "message": "Record(s) Found",
+        "data": {
+            "totalCount": "1",
+            "session": [{"id": 1, "name": "foo", "room": "bar", "desc": "test",
+                            "speakers": [9,4], "ratings": [8], "tags": [7]}]
+        }
+    };
+    stubEndpointForHttpRequest('/api/session/', json);
+    var json = {
+        "success": true,
+        "message": "Record(s) Found",
+        "data": {
+            "totalCount": "1",
+            "session": {"id": 1, "name": "foo", "room": "bar", "desc": "test",
+                            "speakers": [9,4], "ratings": [8], "tags": [7]}
+        }
+    };
+    stubEndpointForHttpRequest('/api/session/1/', json);
     visit("/session/1").then(function() {
         var name = Ember.$.trim($("div .model_name").text());
         equal(name, "foo", "name was instead: " + name);
@@ -133,7 +226,7 @@ test('ajax response for single session will render correctly', function() {
         //setup the http post mock $.ajax
         //for some reason the 2 lines below are not used or needed?
         var response = {"id": 4, "score": 2, "feedback": "abc", "session": 1};
-        stubEndpointForHttpRequest('/api/ratings/', response, 'POST', 201);
+        stubEndpointForHttpRequest('/api/rating/', response, 'POST', 201);
         fillIn(".score", "2");
         fillIn(".feedback", "abc");
         return click(".add_rating");
@@ -141,7 +234,7 @@ test('ajax response for single session will render correctly', function() {
         //this is currently broken for non-embedded bound templates (should be 2)
         var ratings = find("div .ratings span.score").length;
         equal(ratings, 1, "table had " + ratings + " ratings");
-        expectUrlTypeHashEqual("/api/ratings/", "POST", {});
+        expectUrlTypeHashEqual("/api/rating/", "POST", {});
         expectRatingAddedToStore(4, 2, 'abc', 1);
         equal(ajaxHash.data, '{"score":2,"feedback":"abc","session":"1","other":null}');
     });
@@ -185,8 +278,8 @@ test('finding nested attributes when some requested records are already loaded m
         var store = App.__container__.lookup("store:main");  // pretty sure this is not the right way to do this...
         store.serializerFor('speaker').pushSinglePayload(store, 'speaker', aliases[0]); // pre-load the first alias object before find
     });
-    stubEndpointForHttpRequest('/api/users/1/', user);
-    stubEndpointForHttpRequest('/api/users/1/aliases/', aliases);
+    stubEndpointForHttpRequest('/api/user/1/', user);
+    stubEndpointForHttpRequest('/api/user/1/aliases/', aliases);
     visit("/user/1").then(function() {
         var name = Ember.$.trim($(".username").text());
         equal(name, "foo", "name was instead: " + name);
@@ -200,8 +293,8 @@ test('finding nested attributes when some requested records are already loaded m
 test('finding nested attributes makes GET request to the correct attribute-based URL', function() {
     var user = {"id": 1, "username": "foo", "aliases": [8, 9]};
     var aliases = [{"id": 8, "name": "ember"}, {"id": 9, "name": "tomster"}];
-    stubEndpointForHttpRequest('/api/users/1/', user);
-    stubEndpointForHttpRequest('/api/users/1/aliases/', aliases);
+    stubEndpointForHttpRequest('/api/user/1/', user);
+    stubEndpointForHttpRequest('/api/user/1/aliases/', aliases);
     visit("/user/1").then(function() {
         var name = Ember.$.trim($(".username").text());
         equal(name, "foo", "name was instead: " + name);
@@ -216,15 +309,15 @@ test('basic error handling will bubble to the model', function() {
     var session = {"id": 1, "name": "x", "room": "y", "tags": [], ratings: [], speakers: [1]};
     var speaker = {"id": 1, "name": "wat", "location": "iowa", "session": 1, "association": null, "personas": [1], "zidentity": null};
     var personas = [{"id": 1, "nickname": "magic", "speaker": 1, "company": null}];
-    stubEndpointForHttpRequest('/api/sessions/1/', session);
-    stubEndpointForHttpRequest('/api/speakers/1/', speaker);
-    stubEndpointForHttpRequest('/api/speakers/1/personas/', personas);
+    stubEndpointForHttpRequest('/api/session/1/', session);
+    stubEndpointForHttpRequest('/api/speaker/1/', speaker);
+    stubEndpointForHttpRequest('/api/speaker/1/personas/', personas);
     visit("/speaker/1").then(function() {
         var name = $("input.name").val();
         equal(name, "wat", "name was instead: " + name);
         var errors = Ember.$.trim($("#errors").text());
         equal(errors, "", "errors was instead: " + errors);
-        stubEndpointForHttpRequest('/api/speakers/1/', {}, 'PUT', 400);
+        stubEndpointForHttpRequest('/api/speaker/1/', {}, 'PUT', 400);
         return click(".update");
     }).then(function() {
         var name = $("input.name").val();
@@ -235,13 +328,13 @@ test('basic error handling will bubble to the model', function() {
 });
 
 test('basic error handling will not fire when update is successful', function() {
-    stubEndpointForHttpRequest('/api/associations/1/', [{"id": 1, "name": "first", "speakers": [1]}]);
-    stubEndpointForHttpRequest('/api/sessions/1/', [{"id": 1, "name": "z", "room": "d", "tags": [], "speakers": [1], "ratings": []}]);
-    stubEndpointForHttpRequest('/api/users/1/', [{"id": 1, "username": "gutschik", "aliases": []}]);
+    stubEndpointForHttpRequest('/api/association/1/', [{"id": 1, "name": "first", "speakers": [1]}]);
+    stubEndpointForHttpRequest('/api/session/1/', [{"id": 1, "name": "z", "room": "d", "tags": [], "speakers": [1], "ratings": []}]);
+    stubEndpointForHttpRequest('/api/user/1/', [{"id": 1, "username": "gutschik", "aliases": []}]);
     var speaker = {"id": 1, "name": "wat", "location": "iowa", "session": 1, "association": 1, "personas": [1], "zidentity": 1};
     var personas = [{"id": 1, "nickname": "magic", "speaker": 1, "company": 1}];
-    stubEndpointForHttpRequest('/api/speakers/1/', speaker);
-    stubEndpointForHttpRequest('/api/speakers/1/personas/', personas);
+    stubEndpointForHttpRequest('/api/speaker/1/', speaker);
+    stubEndpointForHttpRequest('/api/speaker/1/personas/', personas);
     visit("/speaker/1").then(function() {
         var name = $("input.name").val();
         equal(name, "wat", "name was instead: " + name);
@@ -261,20 +354,20 @@ test('basic error handling will not fire when update is successful', function() 
 
 test('ajax post with multiple parents will use singular endpoint', function() {
     stubEndpointForHttpRequest('/api/users/1/aliases/', speakers_json);
-    stubEndpointForHttpRequest('/api/sessions/1/speakers/', speakers_json);
-    stubEndpointForHttpRequest('/api/sessions/1/ratings/', ratings_json);
-    stubEndpointForHttpRequest('/api/sessions/1/tags/', tags_json);
+    stubEndpointForHttpRequest('/api/session/1/speakers/', speakers_json);
+    stubEndpointForHttpRequest('/api/session/1/ratings/', ratings_json);
+    stubEndpointForHttpRequest('/api/session/1/tags/', tags_json);
     var json = {"id": 1, "name": "foo", "room": "bar", "desc": "test", "speakers": [9,4], "ratings": [8], "tags": [7]};
     var response = {"id": 3, "name": "tom", "location": "iowa", "session": 1, "association": null, "personas": [], "zidentity": 1};
-    stubEndpointForHttpRequest('/api/sessions/', [json]);
-    stubEndpointForHttpRequest('/api/sessions/1/', json);
+    stubEndpointForHttpRequest('/api/session/', [json]);
+    stubEndpointForHttpRequest('/api/session/1/', json);
     visit("/session/1").then(function() {
         var speakers = find("div .speakers span.name").length;
         equal(speakers, 2, "template had " + speakers + " speakers");
         //setup the http post mock $.ajax
         var user = {"id": 1, "username": "gutschik", "aliases": [1]};
-        stubEndpointForHttpRequest('/api/users/1/', user);
-        stubEndpointForHttpRequest('/api/speakers/', response, 'POST', 201);
+        stubEndpointForHttpRequest('/api/user/1/', user);
+        stubEndpointForHttpRequest('/api/speaker/', response, 'POST', 201);
         fillIn(".speaker_name", "tom");
         fillIn(".speaker_location", "iowa");
         return click(".add_speaker");
@@ -282,24 +375,24 @@ test('ajax post with multiple parents will use singular endpoint', function() {
         //this is currently broken for non-embedded bound templates (should be 3)
         var speakers = find("div .speakers span.name").length;
         equal(speakers, 2, "template had " + speakers + " speakers");
-        expectUrlTypeHashEqual("/api/speakers/", "POST", response);
+        expectUrlTypeHashEqual("/api/speaker/", "POST", response);
         expectSpeakerAddedToStore(3, 'tom', 'iowa');
     });
 });
 
 test('ajax post with single parent will use correctly nested endpoint', function() {
-    stubEndpointForHttpRequest('/api/sessions/1/speakers/', speakers_json);
-    stubEndpointForHttpRequest('/api/sessions/1/ratings/', ratings_json);
-    stubEndpointForHttpRequest('/api/sessions/1/tags/', tags_json);
+    stubEndpointForHttpRequest('/api/session/1/speakers/', speakers_json);
+    stubEndpointForHttpRequest('/api/session/1/ratings/', ratings_json);
+    stubEndpointForHttpRequest('/api/session/1/tags/', tags_json);
     var json = {"id": 1, "name": "foo", "room": "bar", "desc": "test", "speakers": [9,4], "ratings": [8], "tags": [7]};
     var response = {"id": 3, "name": "axe", "location": "yo", "session": 1, "association": null, "personas": [], "zidentity": null};
-    stubEndpointForHttpRequest('/api/sessions/', [json]);
-    stubEndpointForHttpRequest('/api/sessions/1/', json);
+    stubEndpointForHttpRequest('/api/session/', [json]);
+    stubEndpointForHttpRequest('/api/session/1/', json);
     visit("/session/1").then(function() {
         var speakers = find("div .speakers span.name").length;
         equal(speakers, 2, "template had " + speakers + " speakers");
         //setup the http post mock $.ajax
-        stubEndpointForHttpRequest('/api/speakers/', response, 'POST', 201);
+        stubEndpointForHttpRequest('/api/speaker/', response, 'POST', 201);
         fillIn(".speaker_name", "tbill");
         fillIn(".speaker_location", "ohio");
         return click(".add_speaker_with_single_parent");
@@ -307,27 +400,27 @@ test('ajax post with single parent will use correctly nested endpoint', function
         //this is currently broken for non-embedded bound templates (should be 3)
         var speakers = find("div .speakers span.name").length;
         equal(speakers, 2, "template had " + speakers + " speakers");
-        expectUrlTypeHashEqual("/api/speakers/", "POST", response);
+        expectUrlTypeHashEqual("/api/speaker/", "POST", response);
         expectSpeakerAddedToStore(3, 'axe', 'yo');
     });
 });
 
 test('ajax post with different single parent will use correctly nested endpoint', function() {
-    stubEndpointForHttpRequest('/api/users/1/aliases/', speakers_json);
-    stubEndpointForHttpRequest('/api/sessions/1/speakers/', speakers_json);
-    stubEndpointForHttpRequest('/api/sessions/1/ratings/', ratings_json);
-    stubEndpointForHttpRequest('/api/sessions/1/tags/', tags_json);
+    stubEndpointForHttpRequest('/api/user/1/aliases/', speakers_json);
+    stubEndpointForHttpRequest('/api/session/1/speakers/', speakers_json);
+    stubEndpointForHttpRequest('/api/session/1/ratings/', ratings_json);
+    stubEndpointForHttpRequest('/api/session/1/tags/', tags_json);
     var json = {"id": 1, "name": "foo", "room": "bar", "desc": "test", "speakers": [9,4], "ratings": [8], "tags": [7]};
     var response = {"id": 3, "name": "who", "location": "dat", "session": null, "association": null, "personas": [], "zidentity": 1};
-    stubEndpointForHttpRequest('/api/sessions/', [json]);
-    stubEndpointForHttpRequest('/api/sessions/1/', json);
+    stubEndpointForHttpRequest('/api/session/', [json]);
+    stubEndpointForHttpRequest('/api/session/1/', json);
     visit("/session/1").then(function() {
         var speakers = find("div .speakers span.name").length;
         equal(speakers, 2, "template had " + speakers + " speakers");
         //setup the http post mock $.ajax
         var user = {"id": 1, "username": "gutschik", "aliases": [1]};
-        stubEndpointForHttpRequest('/api/users/1/', user);
-        stubEndpointForHttpRequest('/api/speakers/', response, 'POST', 201);
+        stubEndpointForHttpRequest('/api/user/1/', user);
+        stubEndpointForHttpRequest('/api/speaker/', response, 'POST', 201);
         fillIn(".speaker_name", "who");
         fillIn(".speaker_location", "dat");
         return click(".add_speaker_with_user_single_parent");
@@ -335,7 +428,7 @@ test('ajax post with different single parent will use correctly nested endpoint'
         //this is currently broken for non-embedded bound templates (should be 3)
         var speakers = find("div .speakers span.name").length;
         equal(speakers, 2, "template had " + speakers + " speakers");
-        expectUrlTypeHashEqual("/api/speakers/", "POST", response);
+        expectUrlTypeHashEqual("/api/speaker/", "POST", response);
         expectSpeakerAddedToStore(3, 'who', 'dat');
     });
 });
@@ -343,7 +436,7 @@ test('ajax post with different single parent will use correctly nested endpoint'
 test('multiword hasMany key is serialized correctly on save', function() {
     var store = App.__container__.lookup('store:main'),
         car;
-    stubEndpointForHttpRequest('/api/cars/1/',
+    stubEndpointForHttpRequest('/api/car/1/',
         {'id': 1, 'car_parts': [1,2]}, 'PUT');
 
     Ember.run(function(){
@@ -371,9 +464,9 @@ test('multiword hasMany key is serialized correctly on save', function() {
 
 test('camelCase belongsTo key is serialized with underscores on save', function() {
     var store = App.__container__.lookup('store:main');
-    stubEndpointForHttpRequest('/api/camel_parents/1/', {'id': 1, 'name': 'parent'});
+    stubEndpointForHttpRequest('/api/camel_parent/1/', {'id': 1, 'name': 'parent'});
     visit("/camelParent").then(function() {
-        stubEndpointForHttpRequest('/api/camel_kids/', {"description":"firstkid","camel_parent":"1"}, 'POST', 201);
+        stubEndpointForHttpRequest('/api/camel_kid/', {"description":"firstkid","camel_parent":"1"}, 'POST', 201);
         return click(".add");
     }).then(function() {
         equal(ajaxHash.data, '{"description":"firstkid","camel_parent":"1"}');
@@ -383,8 +476,8 @@ test('camelCase belongsTo key is serialized with underscores on save', function(
 test('string ids are allowed', function() {
     var speaker = {"id": 1, "name": "wat", "location": "iowa", "session": 1, "badges": ["bna"], "association": 1, "personas": [], "zidentity": 1};
     var badges = [{"id": "bna", "city": "Nashville"}];
-    stubEndpointForHttpRequest('/api/speakers/1/', speaker);
-    stubEndpointForHttpRequest('/api/speakers/1/badges/', badges);
+    stubEndpointForHttpRequest('/api/speaker/1/', speaker);
+    stubEndpointForHttpRequest('/api/speaker/1/badges/', badges);
     visit("/speaker/1").then(function() {
         var city = $(".Nashville");
         equal(city.length, 1, "One city was found");

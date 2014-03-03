@@ -19,7 +19,7 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
     */
     pathForType: function(type) {
         var decamelized = Ember.String.decamelize(type);
-        return Ember.String.pluralize(decamelized);
+        return Ember.String.singularize(decamelized);
     },
 
 

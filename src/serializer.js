@@ -4,7 +4,26 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
         this._super.apply(this, arguments);
     },
 
+    /**
+     `extractMeta` is used to deserialize any meta information in the
+     adapter payload. By default Ember Data expects meta information to
+     be located on the `meta` property of the payload object.
+
+     @method extractMeta
+     @param {DS.Store} store
+     @param {subclass of DS.Model} type
+     @param {Object} payload
+     */
+    extractMeta: function(store, type, payload) {
+        if (payload && payload.data && payload.data.totalCount) {
+            store.metaForType(type, { total: payload.data.totalCount });  // sets the metadata
+            delete payload.data.totalCount;  // keeps ember data from trying to parse "totalCount" as a record
+            delete payload.data;  // keeps ember data from trying to parse "totalCount" as a record
+        }
+    },
+
     extractRESTFullYiiPayload: function(store, type, payload) {
+
         type.eachRelationship(function(key, relationship){
             if (!Ember.isNone(payload[key]) &&
                 typeof(payload[key][0]) !== 'number' &&
