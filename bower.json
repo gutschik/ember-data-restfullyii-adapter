@@ -1,0 +1,30 @@
+{
+  "name": "ember-data-restfullyii-adapter",
+  "version": "1.0.1",
+  "homepage": "https://github.com/gutschik/ember-data-restfullyii-adapter",
+  "authors": [
+    "Benjamin Gutschik <benjamin@gutschik.de>"
+  ],
+  "description": "An ember-data adapter for Yii web applications powered by the RESTFullYii API",
+  "main": "build/ember-data-restfullyii-adapter.js",
+  "dependencies": {
+      "ember": "~1.4.0",
+      "ember-data": "~1.0.0-beta.7"
+  },
+  "keywords": [
+    "ember",
+    "data",
+    "yii",
+    "RESTFullYii",
+    "rest",
+    "adapter"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
