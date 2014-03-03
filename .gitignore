@@ -1,0 +1,11 @@
+syntax: glob
+
+dist
+tmp
+*swp
+
+node_modules/*
+tests/dist/
+
+tests/lib/tmpl.min.js
+.idea
