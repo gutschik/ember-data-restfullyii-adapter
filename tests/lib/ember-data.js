@@ -3217,6 +3217,9 @@ function _findMany(adapter, store, type, ids, owner) {
       serializer = serializerForAdapter(adapter, type);
 
   return resolve(promise, "DS: Handle Adapter#findMany of " + type).then(function(payload) {
+
+      /*jshint debug:true*/
+      debugger;
     payload = serializer.extract(store, type, payload, null, 'findMany');
 
     Ember.assert("The response from a findMany must be an Array, not " + Ember.inspect(payload), Ember.typeOf(payload) === 'array');

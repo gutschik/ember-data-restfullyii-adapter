@@ -18,48 +18,165 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
         if (payload && payload.data && payload.data.totalCount) {
             store.metaForType(type, { total: payload.data.totalCount });  // sets the metadata
             delete payload.data.totalCount;  // keeps ember data from trying to parse "totalCount" as a record
-            delete payload.data;  // keeps ember data from trying to parse "totalCount" as a record
+//            delete payload.data;  // keeps ember data from trying to parse "totalCount" as a record
         }
+        if (payload && payload.message) {
+            delete payload.message;
+        }
+        if (payload && payload.success) {
+            delete payload.success;
+        }
+    },
+
+    /**
+     The `extract` method is used to deserialize payload data from the
+     server. By default the `JSONSerializer` does not push the records
+     into the store. However records that subclass `JSONSerializer`
+     such as the `RESTSerializer` may push records into the store as
+     part of the extract call.
+
+     This method deletegates to a more specific extract method based on
+     the `requestType`.
+
+     Example
+
+     ```javascript
+     var get = Ember.get;
+     socket.on('message', function(message) {
+      var modelName = message.model;
+      var data = message.data;
+      var type = store.modelFor(modelName);
+      var serializer = store.serializerFor(type.typeKey);
+      var record = serializer.extract(store, type, data, get(data, 'id'), 'single');
+      store.push(modelName, record);
+    });
+     ```
+
+     @method extract
+     @param {DS.Store} store
+     @param {subclass of DS.Model} type
+     @param {Object} payload
+     @param {String or Number} id
+     @param {String} requestType
+     @return {Object} json The deserialized payload
+     */
+    extract: function(store, type, payload, id, requestType) {
+        this.extractMeta(store, type, payload);
+
+        /*jshint debug:true */
+        debugger;
+
+        payload = this.normalizePayload(type, payload);
+
+        var specificExtract = "extract" + requestType.charAt(0).toUpperCase() + requestType.substr(1);
+        return this[specificExtract](store, type, payload, id, requestType);
     },
 
     extractRESTFullYiiPayload: function(store, type, payload) {
 
-        type.eachRelationship(function(key, relationship){
+        type.eachRelationship(function(key, relationship) {
+
+            /*jshint debug:true*/
+//            debugger;
+            /*jshint devel:true*/
+//            console.log(payload[key]);
+//            payload[key] = this.normalizePayload(type, payload[key]);
+
             if (!Ember.isNone(payload[key]) &&
                 typeof(payload[key][0]) !== 'number' &&
                 typeof(payload[key][0]) !== 'string' &&
-                relationship.kind ==='hasMany') {
-              if (Ember.typeOf(payload[key]) === 'array' && payload[key].length > 0) {
-                var ids = payload[key].mapBy('id'); //todo find pk (not always id)
-                this.pushArrayPayload(store, relationship.type, payload[key]);
-                payload[key] = ids;
-              }
+                relationship.kind === 'hasMany') {
+                if (Ember.typeOf(payload[key]) === 'array' && payload[key].length > 0) {
+                    var ids = payload[key].mapBy('id'); //todo find pk (not always id)
+                    this.pushArrayPayload(store, relationship.type, payload[key]);
+                    payload[key] = ids;
+                }
             }
-            else if (!Ember.isNone(payload[key]) && typeof(payload[key]) === 'object' && relationship.kind ==='belongsTo') {
-                var id=payload[key].id;
-                this.pushSinglePayload(store,relationship.type,payload[key]);
-                payload[key]=id;
+            else if (!Ember.isNone(payload[key]) && typeof(payload[key]) === 'object' && relationship.kind === 'belongsTo') {
+                var id = payload[key].id;
+                this.pushSinglePayload(store, relationship.type, payload[key]);
+                payload[key] = id;
             }
         }, this);
     },
 
-    extractSingle: function(store, type, payload) {
-        // using normalize from RESTSerializer applies transforms and allows
-        // us to define keyForAttribute and keyForRelationship to handle
-        // camelization correctly.
-        this.normalize(type, payload);
-        this.extractRESTFullYiiPayload(store, type, payload);
+    /**
+    You can use this method to normalize all payloads, regardless of whether they
+    represent single records or an array.
+
+        For example, you might want to remove some extraneous data from the payload:
+
+        ```js
+    App.ApplicationSerializer = DS.RESTSerializer.extend({
+        normalizePayload: function(type, payload) {
+            delete payload.version;
+            delete payload.status;
+            return payload;
+        }
+    });
+    ```
+
+    @method normalizePayload
+    @param {subclass of DS.Model} type
+    @param {Object} hash
+    @returns {Object} the normalized payload
+    */
+    normalizePayload: function(primaryType, payload) {
+
+        /*jshint debug:true*/
+//        debugger;
+
+        var type = Ember.String.decamelize(primaryType.typeKey);
+        type = Ember.String.singularize(type);
+
+//        delete payload.version;
+//        delete payload.status;
+
+        if (payload && payload.data && payload.data[type]) {
+            payload = payload.data[type];
+        }
+
+
+        /*jshint devel:true*/
+//        console.log(payload);
+
         return payload;
     },
 
-    extractArray: function(store, type, payload) {
+
+    extractSingle: function(store, primaryType, payload) {
+
+//        payload = this.normalizePayload(primaryType, payload);
+
+        /*jshint debug:true*/
+//        debugger;
+
+        // using normalize from RESTSerializer applies transforms and allows
+        // us to define keyForAttribute and keyForRelationship to handle
+        // camelization correctly.
+        this.normalize(primaryType, payload);
+        this.extractRESTFullYiiPayload(store, primaryType, payload);
+        return payload;
+    },
+
+    extractArray: function(store, primaryType, payload) {
+
+//        payload = this.normalizePayload(primaryType, payload);
+
+        /*jshint debug:true*/
+//        debugger;
+
+
+        /*jshint devel:true*/
+//        console.log(type);
+
         var self = this;
         for (var j = 0; j < payload.length; j++) {
             // using normalize from RESTSerializer applies transforms and allows
             // us to define keyForAttribute and keyForRelationship to handle
             // camelization correctly.
-            this.normalize(type, payload[j]);
-            self.extractRESTFullYiiPayload(store, type, payload[j]);
+            this.normalize(primaryType, payload[j]);
+            self.extractRESTFullYiiPayload(store, primaryType, payload[j]);
         }
         return payload;
     },

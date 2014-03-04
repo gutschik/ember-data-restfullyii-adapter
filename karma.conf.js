@@ -10,9 +10,12 @@ module.exports = function(karma) {
         ],
 
         logLevel: karma.LOG_ERROR,
-        browsers: ['PhantomJS'],
+//        browsers: ['PhantomJS'],
+//        browsers: ['PhantomJS', 'Chrome'],
+        browsers: ['Chrome'],
         singleRun: true,
         autoWatch: false,
+        background: false,
 
         frameworks: ['qunit', 'qunit-sb']
     });

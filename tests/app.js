@@ -98,7 +98,7 @@ App.Association = DS.Model.extend({
 
 App.User = DS.Model.extend({
     username: DS.attr('string'),
-    aliases: DS.hasMany('speaker', { async: true})
+    speakers: DS.hasMany('speaker', { async: true})
 });
 
 App.Company = DS.Model.extend({

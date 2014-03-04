@@ -237,7 +237,7 @@ This adapter was built by the community for the community. If you would like to 
 
 ## Versions
     ember.js 1.4.0
-    ember-data 1.0 beta 7
+    ember-data 1.0 beta 5
 
 ## Pending Issues
 
@@ -246,6 +246,8 @@ This adapter was built by the community for the community. If you would like to 
     ii) Async belongsTo/hasMany requires a pull-request be merged into ember-data core (see the WIP branch for a workaround)
 
     iii) Pagination is not yet supported
+
+    iiii) DS.hasMany aliases are not yet supported
 
 ## Examples
 An example project that shows the adapter in action can be found below
