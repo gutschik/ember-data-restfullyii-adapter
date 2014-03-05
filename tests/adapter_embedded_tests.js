@@ -124,7 +124,10 @@ test('add rating will do http post and append rating to template', function() {
             "other":  {
                 "id": 1, "hat": "eee",
                 "speakers": [{"id": 1, "name": "first", "other": 1}],
-                "ratings": [{"id": 1, "score": 10, "feedback": "nice", "other": 1}],
+                "ratings": [
+                    {"id": 1, "score": 10, "feedback": "nice", "other": 1},
+                    {"id": 2, "score": 10, "feedback": "nice", "other": 1}
+                ],
                 "tags": [{"id": 1, "description": "done"}],
                 "location": {"id": 1, "name": "US"}
             }
@@ -134,7 +137,7 @@ test('add rating will do http post and append rating to template', function() {
     stubEndpointForHttpRequest('/api/other/1/', json);
     visit("/other/1").then(function() {
         var before = find("div .ratings span.score").length;
-        equal(before, 1, "initially the table had " + before + " ratings");
+        equal(before, 2, "initially the table had " + before + " ratings");
         //setup the http post mock $.ajax
         //for some reason the 2 lines below are not used or needed?
         stubEndpointForHttpRequest('/api/rating/', rating, 'POST', 201);
@@ -143,7 +146,7 @@ test('add rating will do http post and append rating to template', function() {
         return click(".add_rating");
     }).then(function() {
         var after = find("div .ratings span.score").length;
-        equal(after, 2, "table had " + after + " ratings after create");
+        equal(after, 3, "table had " + after + " ratings after create");
         expectUrlTypeHashEqual("/api/rating/", "POST", rating);
         expectRatingAddedToStore(3, 4, 'def', 1, 'other');
     });

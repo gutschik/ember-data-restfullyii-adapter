@@ -68,4 +68,4 @@ function stubEndpointForHttpRequest(url, json, verb, status) {
 }
 
 $.mockjaxSettings.logging = false;
-$.mockjaxSettings.responseTime = 0;
+$.mockjaxSettings.responseTime = 10;

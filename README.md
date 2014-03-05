@@ -237,7 +237,7 @@ This adapter was built by the community for the community. If you would like to 
 
 ## Versions
     ember.js 1.4.0
-    ember-data 1.0 beta 5
+    ember-data 1.0.0-beta.6
 
 ## Pending Issues
 

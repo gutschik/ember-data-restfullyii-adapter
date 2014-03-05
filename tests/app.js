@@ -58,7 +58,7 @@ App.Speaker = DS.Model.extend({
     location: DS.attr('string'),
     association: DS.belongsTo('association'),
     personas: DS.hasMany('persona', { async: true }),
-    badges: DS.hasMany('badge', { async: true }),
+    badges: DS.hasMany('badge', { async: false }),
     session: DS.belongsTo('session'),
     zidentity: DS.belongsTo('user'),
     other: DS.belongsTo('other'),
@@ -152,7 +152,7 @@ App.CamelParentController = Ember.ObjectController.extend({
     actions: {
         addCamelKid: function() {
             var parent = this.store.all('camelParent').objectAt(0);
-            var hash = {'description': 'firstkid', 'camelParent': parent};
+            var hash = {'description': 'secondkid', 'camelParent': parent};
             this.store.createRecord('camelKid', hash).save();
         }
     }

@@ -63,9 +63,6 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
     extract: function(store, type, payload, id, requestType) {
         this.extractMeta(store, type, payload);
 
-        /*jshint debug:true */
-        debugger;
-
         payload = this.normalizePayload(type, payload);
 
         var specificExtract = "extract" + requestType.charAt(0).toUpperCase() + requestType.substr(1);
@@ -129,16 +126,9 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
         var type = Ember.String.decamelize(primaryType.typeKey);
         type = Ember.String.singularize(type);
 
-//        delete payload.version;
-//        delete payload.status;
-
         if (payload && payload.data && payload.data[type]) {
             payload = payload.data[type];
         }
-
-
-        /*jshint devel:true*/
-//        console.log(payload);
 
         return payload;
     },

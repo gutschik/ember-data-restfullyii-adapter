@@ -1,2 +1,6 @@
-<div class="name">{{model.name}}</div>
+<div class="name">Name: {{model.name}}</div>
 <button class="add" {{action 'addCamelKid'}}>Add</button>
+hello
+{{#each camelKid in model.camelKids}}
+    <div class="description">Description: {{camelKid.description}}</div>
+{{/each}}
