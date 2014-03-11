@@ -1,6 +1,8 @@
 App = Ember.Application.create({
-  rootElement: '#ember'
+  rootElement: '#ember',
+  LOG_TRANSITIONS: false
 });
+
 
 App.SillyTransform = DS.Transform.extend({
   text: "SILLYTRANSFORM",
@@ -123,8 +125,15 @@ App.Sponsor = DS.Model.extend({
     company: DS.belongsTo('company')
 });
 
-App.CarPart = DS.Model.extend({ cars: DS.hasMany('car', {async: true})});
-App.Car = DS.Model.extend({ carParts: DS.hasMany('carPart', {async: true})});
+App.CarPart = DS.Model.extend({
+    name: DS.attr('string'),
+    cars: DS.hasMany('car', {async: true})
+});
+
+App.Car = DS.Model.extend({
+    name: DS.attr('string'),
+    carParts: DS.hasMany('carPart', {async: true})
+});
 
 App.CamelParent = DS.Model.extend({
     name: DS.attr('string'),
@@ -294,6 +303,7 @@ App.Router.map(function() {
   this.resource("tag", { path : "/tag/:tag_id" });
   this.resource("user", { path : "/user/:user_id" });
   this.resource("preserialized", { path: "/preserialized" });
+  this.resource("car",  { path : "/car/:car_id" });
 });
 
 App.ApplicationAdapter = DS.RESTFullYiiAdapter.extend({

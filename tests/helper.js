@@ -58,14 +58,15 @@ function stubEndpointForHttpRequest(url, json, verb, status) {
     if (status == null) {
         status = 200;
     }
+
     $.mockjax({
         type: verb,
         url: url,
         status: status,
         dataType: 'json',
+        responseTime: 10,
+        logging: false,
         responseText: json
     });
 }
 
-$.mockjaxSettings.logging = false;
-$.mockjaxSettings.responseTime = 10;

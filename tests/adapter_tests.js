@@ -475,7 +475,8 @@ test('ajax post with multiple parents will use singular endpoint', function() {
         }
     };
 
-    stubEndpointForHttpRequest('/api/users/1/aliases/', speakers_json);
+    stubEndpointForHttpRequest('/api/user/1/', user);
+    stubEndpointForHttpRequest('/api/speaker/', post, 'POST', 201);
     stubEndpointForHttpRequest('/api/session/1/speakers/', speakers_json);
     stubEndpointForHttpRequest('/api/session/1/ratings/', ratings_json);
     stubEndpointForHttpRequest('/api/session/1/tags/', tags_json);
@@ -484,9 +485,6 @@ test('ajax post with multiple parents will use singular endpoint', function() {
     visit("/session/1").then(function() {
         var speakers = find("div .speakers span.name").length;
         equal(speakers, 2, "template had " + speakers + " speakers");
-        //setup the http post mock $.ajax
-        stubEndpointForHttpRequest('/api/user/1/', user);
-        stubEndpointForHttpRequest('/api/speaker/', post, 'POST', 201);
         fillIn(".speaker_name", "tom");
         fillIn(".speaker_location", "iowa");
         return click(".add_speaker");
@@ -594,15 +592,23 @@ test('ajax post with different single parent will use correctly nested endpoint'
 });
 
 test('multiword hasMany key is serialized correctly on save', function() {
+
     var store = App.__container__.lookup('store:main'),
         car;
-    stubEndpointForHttpRequest('/api/car/1/',
-        {'id': 1, 'car_parts': [1,2]}, 'PUT');
+    var json = {
+        "success": "true",
+        "message": "Record Updated",
+        "data": {
+            "totalCount": "1",
+            'car': {'id': 1, 'car_parts': [1, 2]}
+        }
+    };
+    stubEndpointForHttpRequest('/api/car/1/', json, 'PUT');
 
     Ember.run(function(){
         var serializer = store.serializerFor('car');
         serializer.pushSinglePayload(store, 'car',
-            {'id': 1, 'car_parts': []});
+            {'id': 1, 'name': "Bully", 'car_parts': []});
         serializer.pushArrayPayload(store, 'carPart',
             [{'id': 1, 'cars': []}, {'id': 2, 'cars': []}]);
 
@@ -614,12 +620,45 @@ test('multiword hasMany key is serialized correctly on save', function() {
             car.set('carParts', carParts);
             return car.save();
         }).then(function(car){
-            equal(ajaxHash.data, '{"car_parts":[]}');
+            equal(ajaxHash.data, '{"name":"Bully","car_parts":[]}');
             return;
         });
     });
 
     wait();
+});
+
+test('finding ManyMany nested attributes makes GET request to the correct attribute-based URL', function() {
+
+    var car = {
+        "success": true,
+        "message": "Record(s) Found",
+        "data": {
+            "totalCount": "1",
+            "car": {"id": 1, "name": "foo", "car_parts": [3, 4]}
+        }
+    };
+    var carParts = {
+        "success": true,
+        "message": "Record(s) Found",
+        "data": {
+            "totalCount": "2",
+            "car_part": [{"id": 3, "name": "bar"}, {"id": 4, "name": "foo"}]
+        }
+    };
+
+    window.billy = true;
+
+    stubEndpointForHttpRequest('/api/car/1/', car);
+    stubEndpointForHttpRequest('/api/car/1/car_parts/', carParts);
+    visit("/car/1").then(function() {
+        var name = Ember.$.trim($("h1").text());
+        equal(name, "foo", "name was instead: " + name);
+        var count = $(".carparts").length;
+        equal(count, 2, "count was instead: " + count);
+        var id = Ember.$.trim($(".carparts>.id:eq(1)").text());
+        equal(id, "4", "id was instead: " + id);
+    });
 });
 
 test('camelCase belongsTo key is serialized with underscores on save', function() {

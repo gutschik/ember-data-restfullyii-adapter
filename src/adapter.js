@@ -22,7 +22,6 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
         return Ember.String.singularize(decamelized);
     },
 
-
     createRecord: function(store, type, record) {
         var url = this.buildURL(type.typeKey);
         var data = store.serializerFor(type.typeKey).serialize(record);
@@ -36,13 +35,13 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
     },
 
     findMany: function(store, type, ids, parent) {
-        var adapter, root, url, endpoint, attribute;
-        adapter = this;
+        var url, endpoint, attribute;
 
         if (parent) {
             attribute = this.getHasManyAttributeName(type, parent, ids);
             endpoint = store.serializerFor(type.typeKey).keyForAttribute(attribute);
-            url = this.buildFindManyUrlWithParent(type, parent, endpoint);
+            url = this.buildFindManyUrlWithParent(type, parent, endpoint, store);
+
         } else {
             Ember.assert("You need to add belongsTo for type (" + type.typeKey + "). No Parent for this record was found");
         }
@@ -67,14 +66,49 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
         return url;
     },
 
-    buildFindManyUrlWithParent: function(type, parent, endpoint) {
-        var root, url, parentValue;
+    /**
+     * WIP
+     * TODO method should be able to check if there's already a filter in url and then merge filter into existing
+     *
+     * @param {String} url
+     * @param {String} key
+     * @param {String} value
+     * @returns {String} url
+     */
+    addFilterToUrl: function(url, k, v) {
 
-        parentValue = parent.get('id'); //todo find pk (not always id)
-        root = parent.constructor.typeKey;
-        url = this.buildURL(root, parentValue);
+        var filter = [],
+            obj = {};
 
-        return url + endpoint + '/';
+        obj[k] = v;
+        filter.push(obj);
+
+        url = url + encodeURI('?filter=' + JSON.stringify(filter));
+
+        return url;
+    },
+
+    buildFindManyUrlWithParent: function(type, parent, endpoint, store) {
+        var root, url, parentValue, isManyMany;
+
+        isManyMany = this.isManyManyRelation(type, parent);
+
+        parentValue = parent.get('id'); //TODO find pk (not always id)
+
+        if (isManyMany) {
+            root = parent.constructor.typeKey;
+            url = this.buildURL(root, parentValue);
+
+            url = url + endpoint + '/';
+        }
+        else {
+            // TODO is there a more convenient way to get the key?
+            var key = store.serializerFor(type.typeKey).keyForAttribute(parent.constructor.typeKey);
+            url = this.buildURL(endpoint);
+            url = this.addFilterToUrl(url, key, parentValue);
+        }
+
+        return url;
     },
 
     /**
@@ -127,6 +161,26 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
       });
 
       return attributeName;
+    },
+
+    /**
+     * @method isManyManyRelation
+     * @param {subclass of DS.Model} type
+     * @param {DS.Model} parent
+     * @returns {boolean}
+     */
+    isManyManyRelation: function(type, parent) {
+        var isManyMany = false;
+
+        if(parent && parent.constructor) {
+            type.eachRelationship(function(name, relationship){
+                if (relationship.kind === "hasMany" && relationship.type.typeKey === parent.constructor.typeKey) {
+                    isManyMany = true;
+                }
+            });
+        }
+
+        return isManyMany;
     }
 
 });

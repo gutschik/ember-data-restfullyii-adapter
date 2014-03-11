@@ -1,0 +1,9 @@
+<h1>{{model.name}}</h1>
+<table>
+    {{#each carPart in model.carParts}}
+        <tr class="carparts">
+            <td class="id">{{carPart.id}}</td>
+            <td class="name">{{carPart.name}}</td>
+        </tr>
+    {{/each}}
+</table>
