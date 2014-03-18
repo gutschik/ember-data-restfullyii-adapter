@@ -2,7 +2,7 @@
     "version": "1.0.1",
     "name": "ember-data-restfullyii-adapter",
     "dependencies": {
-        "grunt-karma": "*",
+        "grunt-karma": "0.6.2",
         "grunt-cli": "*",
         "grunt-contrib-concat": "*",
         "grunt-contrib-jshint": "*",
@@ -10,7 +10,9 @@
         "karma-qunit": "*",
         "karma-qunit-special-blend": "*",
         "karma": "0.10.0",
-        "load-grunt-config": "*"
+        "karma-phantomjs-launcher": "~0.1",
+        "karma-coffee-preprocessor": "~0.1",
+        "load-grunt-config": "0.7.2"
     },
     "scripts": {
         "test": "grunt test"

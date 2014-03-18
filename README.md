@@ -236,7 +236,7 @@ This adapter was built by the community for the community. If you would like to 
     grunt test
 
 ## Versions
-    ember.js 1.4.0
+    ember.js 1.5.0-beta.4
     ember-data 1.0.0-beta.6
 
 ## Pending Issues

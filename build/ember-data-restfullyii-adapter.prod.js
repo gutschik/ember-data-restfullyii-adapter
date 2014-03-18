@@ -1,13 +1,3 @@
-// ==========================================================================
-// Project:   Ember Data RESTFullYii Adapter
-// Copyright: (c) 2014 Benjamin Gutschik http://gutschik.de
-// License:   MIT
-// ==========================================================================
-
-
-// 2fe3a5d (2014-03-11 13:24:28 +0100)
-
-
 (function() {
 
 DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({

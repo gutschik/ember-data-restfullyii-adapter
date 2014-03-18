@@ -9,3 +9,4 @@ tests/dist/
 
 tests/lib/tmpl.min.js
 .idea
+bower_components
