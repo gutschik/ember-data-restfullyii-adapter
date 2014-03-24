@@ -149,6 +149,19 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
         return payload;
     },
 
+    extractFindAll: function(store, primaryType, payload) {
+
+        var self = this;
+        for (var j = 0; j < payload.length; j++) {
+            // using normalize from RESTSerializer applies transforms and allows
+            // us to define keyForAttribute and keyForRelationship to handle
+            // camelization correctly.
+            this.normalize(primaryType, payload[j]);
+            self.extractRESTFullYiiPayload(store, primaryType, payload[j]);
+        }
+        return payload;
+    },
+
     extractArray: function(store, primaryType, payload) {
 
 //        payload = this.normalizePayload(primaryType, payload);
