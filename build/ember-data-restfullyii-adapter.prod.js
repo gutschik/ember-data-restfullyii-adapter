@@ -143,7 +143,7 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
 //        payload = this.normalizePayload(primaryType, payload);
 
         /*jshint debug:true*/
-        debugger;
+//        debugger;
 
         // using normalize from RESTSerializer applies transforms and allows
         // us to define keyForAttribute and keyForRelationship to handle
