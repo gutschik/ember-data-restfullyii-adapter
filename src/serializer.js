@@ -61,6 +61,8 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
      @return {Object} json The deserialized payload
      */
     extract: function(store, type, payload, id, requestType) {
+
+//        debugger;
         this.extractMeta(store, type, payload);
 
         payload = this.normalizePayload(type, payload);
@@ -98,26 +100,26 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
     },
 
     /**
-    You can use this method to normalize all payloads, regardless of whether they
-    represent single records or an array.
+     You can use this method to normalize all payloads, regardless of whether they
+     represent single records or an array.
 
-        For example, you might want to remove some extraneous data from the payload:
+     For example, you might want to remove some extraneous data from the payload:
 
-        ```js
-    App.ApplicationSerializer = DS.RESTSerializer.extend({
+     ```js
+     App.ApplicationSerializer = DS.RESTSerializer.extend({
         normalizePayload: function(type, payload) {
             delete payload.version;
             delete payload.status;
             return payload;
         }
     });
-    ```
+     ```
 
-    @method normalizePayload
-    @param {subclass of DS.Model} type
-    @param {Object} hash
-    @returns {Object} the normalized payload
-    */
+     @method normalizePayload
+     @param {subclass of DS.Model} type
+     @param {Object} hash
+     @returns {Object} the normalized payload
+     */
     normalizePayload: function(primaryType, payload) {
 
         /*jshint debug:true*/
@@ -133,6 +135,21 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
         return payload;
     },
 
+
+    extractSave: function(store, primaryType, payload) {
+
+//        payload = this.normalizePayload(primaryType, payload);
+
+        /*jshint debug:true*/
+        debugger;
+
+        // using normalize from RESTSerializer applies transforms and allows
+        // us to define keyForAttribute and keyForRelationship to handle
+        // camelization correctly.
+        this.normalize(primaryType, payload);
+        this.extractRESTFullYiiPayload(store, primaryType, payload);
+        return payload;
+    },
 
     extractSingle: function(store, primaryType, payload) {
 
@@ -150,6 +167,9 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
     },
 
     extractFindAll: function(store, primaryType, payload) {
+
+        /*jshint debug:true*/
+//        debugger;
 
         var self = this;
         for (var j = 0; j < payload.length; j++) {
@@ -173,6 +193,8 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
         /*jshint devel:true*/
 //        console.log(type);
 
+//        debugger;
+
         var self = this;
         for (var j = 0; j < payload.length; j++) {
             // using normalize from RESTSerializer applies transforms and allows
@@ -185,16 +207,16 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
     },
 
     /**
-      This method allows you to push a single object payload.
+     This method allows you to push a single object payload.
 
-      It will first normalize the payload, so you can use this to push
-      in data streaming in from your server structured the same way
-      that fetches and saves are structured.
+     It will first normalize the payload, so you can use this to push
+     in data streaming in from your server structured the same way
+     that fetches and saves are structured.
 
-      @param {DS.Store} store
-      @param {String} type
-      @param {Object} payload
-    */
+     @param {DS.Store} store
+     @param {String} type
+     @param {Object} payload
+     */
     pushSinglePayload: function(store, type, payload) {
         type = store.modelFor(type);
         payload = this.extract(store, type, payload, null, "find");
@@ -202,16 +224,16 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
     },
 
     /**
-      This method allows you to push an array of object payloads.
+     This method allows you to push an array of object payloads.
 
-      It will first normalize the payload, so you can use this to push
-      in data streaming in from your server structured the same way
-      that fetches and saves are structured.
+     It will first normalize the payload, so you can use this to push
+     in data streaming in from your server structured the same way
+     that fetches and saves are structured.
 
-      @param {DS.Store} store
-      @param {String} type
-      @param {Object} payload
-    */
+     @param {DS.Store} store
+     @param {String} type
+     @param {Object} payload
+     */
     pushArrayPayload: function(store, type, payload) {
         type = store.modelFor(type);
         payload = this.extract(store, type, payload, null, "findAll");
@@ -219,63 +241,110 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
     },
 
     /**
-      Converts camelcased attributes to underscored when serializing.
+     Converts camelcased attributes to underscored when serializing.
 
-      Stolen from DS.ActiveModelSerializer.
+     Stolen from DS.ActiveModelSerializer.
 
-      @method keyForAttribute
-      @param {String} attribute
-      @returns String
-    */
+     @method keyForAttribute
+     @param {String} attribute
+     @returns String
+     */
     keyForAttribute: function(attr) {
         return Ember.String.decamelize(attr);
     },
 
     /**
-      Underscores relationship names when serializing relationship keys.
+     Underscores relationship names and appends "_id" or "_ids" when serializing
+     relationship keys.
 
-      Stolen from DS.ActiveModelSerializer.
-
-      @method keyForRelationship
-      @param {String} key
-      @param {String} kind
-      @returns String
-    */
+     @method keyForRelationship
+     @param {String} key
+     @param {String} kind
+     @return String
+     */
     keyForRelationship: function(key, kind) {
-        return Ember.String.decamelize(key);
+        key = Ember.String.decamelize(key);
+        if (kind === "belongsTo") {
+            return key + "_id";
+        } else if (kind === "hasMany") {
+//            debugger;
+            return key;
+//            return Ember.String.singularize(key);
+//            return Ember.String.singularize(key) + "_ids";
+        } else {
+//            debugger;
+            return key;
+        }
     },
 
     /**
-      Underscore relationship names when serializing belongsToRelationships
+     @method serialize
+     @param {subclass of DS.Model} record
+     @param {Object} options
+     @return {Object} json
+     */
+    serialize: function(record, options) {
 
-      @method serializeBelongsTo
-    */
+        /*jshint debug:true*/
+//        debugger;
+        var json = {};
+
+        if (options && options.includeId) {
+            var id = get(record, 'id');
+
+            if (id) {
+                json[get(this, 'primaryKey')] = id;
+            }
+        }
+
+        record.eachAttribute(function(key, attribute) {
+            this.serializeAttribute(record, json, key, attribute);
+        }, this);
+
+        record.eachRelationship(function(key, relationship) {
+            if (relationship.kind === 'belongsTo') {
+                this.serializeBelongsTo(record, json, relationship);
+            } else if (relationship.kind === 'hasMany') {
+                this.serializeHasMany(record, json, relationship);
+            }
+        }, this);
+
+        return json;
+    },
+
+    /**
+     Underscore relationship names when serializing belongsToRelationships
+
+     @method serializeBelongsTo
+     */
     serializeBelongsTo: function(record, json, relationship) {
+
         var key = relationship.key;
         var belongsTo = record.get(key);
         var json_key = this.keyForRelationship ? this.keyForRelationship(key, "belongsTo") : key;
 
         if (Ember.isNone(belongsTo)) {
-          json[json_key] = belongsTo;
+            json[json_key] = belongsTo;
         } else {
-          if (typeof(record.get(key)) === 'string') {
-            json[json_key] = record.get(key);
-          }else{
-            json[json_key] = record.get(key).get('id');
-          }
+            if (typeof(record.get(key)) === 'string') {
+                json[json_key] = record.get(key);
+            } else {
+                json[json_key] = record.get(key).get('id');
+            }
         }
 
         if (relationship.options.polymorphic) {
-          this.serializePolymorphicType(record, json, relationship);
+            this.serializePolymorphicType(record, json, relationship);
         }
     },
 
     /**
-      Underscore relationship names when serializing hasManyRelationships
+     Underscore relationship names when serializing hasManyRelationships
 
-      @method serializeHasMany
-    */
+     @method serializeHasMany
+     */
     serializeHasMany: function(record, json, relationship) {
+
         var key = relationship.key,
             json_key = this.keyForRelationship(key, "hasMany"),
             relationshipType = DS.RelationshipChange.determineRelationshipType(

@@ -4,38 +4,81 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
     defaultSerializer: "DS/RESTFullYii",
 
     /**
-      Overrides the `pathForType` method to build underscored URLs.
+     Overrides the `pathForType` method to build underscored URLs.
 
-      Stolen from ActiveModelAdapter
+     Stolen from ActiveModelAdapter
 
-      ```js
-        this.pathForType("famousPerson");
-        //=> "famous_people"
-      ```
+     ```js
+     this.pathForType("famousPerson");
+     //=> "famous_people"
+     ```
 
-      @method pathForType
-      @param {String} type
-      @returns String
-    */
+     @method pathForType
+     @param {String} type
+     @returns String
+     */
     pathForType: function(type) {
         var decamelized = Ember.String.decamelize(type);
         return Ember.String.singularize(decamelized);
     },
 
     createRecord: function(store, type, record) {
+        /*jshint debug:true*/
+//        debugger;
         var url = this.buildURL(type.typeKey);
         var data = store.serializerFor(type.typeKey).serialize(record);
         return this.ajax(url, "POST", { data: data });
     },
 
     updateRecord: function(store, type, record) {
+        /*jshint debug:true*/
+//        debugger;
+
+        var id = get(record, 'id');
+        var url = this.buildURL(type.typeKey, id);
         var data = store.serializerFor(type.typeKey).serialize(record);
+
+        console.log(data);
+        return this.ajax(url, "PUT", { data: data });
+    },
+
+    deleteRecord: function(store, type, record) {
         var id = get(record, 'id'); //todo find pk (not always id)
-        return this.ajax(this.buildURL(type.typeKey, id), "PUT", { data: data });
+        var url = this.buildURL(type.typeKey, id);
+        var data = store.serializerFor(type.typeKey).serialize(record);
+
+
+        hash = {
+            data: data
+        };
+
+        var adapter = this;
+
+        return new Ember.RSVP.Promise(function(resolve, reject) {
+            hash = adapter.ajaxOptions(url, type, hash);
+
+            hash.success = function(json) {
+//                debugger;
+//                delete json;
+                Ember.run(null, resolve, json);
+            };
+
+            hash.error = function(jqXHR, textStatus, errorThrown) {
+//                debugger;
+
+                Ember.run(null, reject, adapter.ajaxError(jqXHR));
+            };
+
+            Ember.$.ajax(hash);
+        }, "DS: RestAdapter#ajax " + type + " to " + url);
+
     },
 
     findMany: function(store, type, ids, parent) {
         var url, endpoint, attribute;
+
+        /*jshint debug:true*/
+//        debugger;
 
         if (parent) {
             attribute = this.getHasManyAttributeName(type, parent, ids);
@@ -50,8 +93,18 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
     },
 
     ajax: function(url, type, hash) {
+
+        /*jshint debug:true*/
+//        debugger;
+
         hash = hash || {};
-        hash.cache = false;
+        hash.cache = false; // appends ?_=123455667 to avoid caching
+        // hash.cache = false not working with POST/PUT/DELETE Requests, so....
+        if (type != 'GET') {
+            url = url + ( /\?/.test(url) ? "&" : "?" ) + "_=" + (new Date()).getTime();
+        }
+
+//        url = url + ( /\?/.test( url ) ? "&" : "?" ) + "XDEBUG_SESSION_START=PHPSTORM";
 
         return this._super(url, type, hash);
     },
@@ -59,7 +112,7 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
     buildURL: function(type, id) {
         var url = this._super(type, id);
 
-        if (url.charAt(url.length -1) !== '/') {
+        if (url.charAt(url.length - 1) !== '/') {
             url += '/';
         }
 
@@ -112,55 +165,55 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
     },
 
     /**
-      Extract the attribute name given the parent record, the ids of the referenced model, and the type of
-      the referenced model.
+     Extract the attribute name given the parent record, the ids of the referenced model, and the type of
+     the referenced model.
 
-      Given the model definition
+     Given the model definition
 
-      ````
-      App.User = DS.Model.extend({
+     ````
+     App.User = DS.Model.extend({
           username: DS.attr('string'),
           aliases: DS.hasMany('speaker', { async: true})
           favorites: DS.hasMany('speaker', { async: true})
       });
-      ````
+     ````
 
-      with a model object
+     with a model object
 
-      ````
-      user1 = {
+     ````
+     user1 = {
           id: 1,
           name: 'name',
           aliases: [2,3],
           favorites: [4,5]
       }
-      
-      type = App.Speaker;
-      parent = user1;
-      ids = [4,5]
-      name = getHasManyAttributeName(type, parent, ids) // name === "favorites"
-      ````
 
-      @method getHasManyAttributeName
-      @param {subclass of DS.Model} type
-      @param {DS.Model} parent
-      @param {Array} ids
-      @returns String
-    */
+     type = App.Speaker;
+     parent = user1;
+     ids = [4,5]
+     name = getHasManyAttributeName(type, parent, ids) // name === "favorites"
+     ````
+
+     @method getHasManyAttributeName
+     @param {subclass of DS.Model} type
+     @param {DS.Model} parent
+     @param {Array} ids
+     @returns String
+     */
     getHasManyAttributeName: function(type, parent, ids) {
-      var attributeName;
-      parent.eachRelationship(function(name, relationship){
-        var relationshipIds;
-        if (relationship.kind === "hasMany" && relationship.type.typeKey === type.typeKey) {
-          relationshipIds = parent._data[name].mapBy('id');
-          // check if all of the requested ids are covered by this attribute
-          if (Ember.EnumerableUtils.intersection(ids, relationshipIds).length === ids.length) {
-            attributeName = name;
-          }
-        }
-      });
+        var attributeName;
+        parent.eachRelationship(function(name, relationship) {
+            var relationshipIds;
+            if (relationship.kind === "hasMany" && relationship.type.typeKey === type.typeKey) {
+                relationshipIds = parent._data[name].mapBy('id');
+                // check if all of the requested ids are covered by this attribute
+                if (Ember.EnumerableUtils.intersection(ids, relationshipIds).length === ids.length) {
+                    attributeName = name;
+                }
+            }
+        });
 
-      return attributeName;
+        return attributeName;
     },
 
     /**
@@ -172,8 +225,8 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
     isManyManyRelation: function(type, parent) {
         var isManyMany = false;
 
-        if(parent && parent.constructor) {
-            type.eachRelationship(function(name, relationship){
+        if (parent && parent.constructor) {
+            type.eachRelationship(function(name, relationship) {
                 if (relationship.kind === "hasMany" && relationship.type.typeKey === parent.constructor.typeKey) {
                     isManyMany = true;
                 }

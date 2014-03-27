@@ -11,8 +11,8 @@ module.exports = function(karma) {
 
         logLevel: karma.LOG_ERROR,
 //        browsers: ['PhantomJS', 'Chrome'], singleRun: false,
-//        browsers: ['PhantomJS'], singleRun: true,
-        browsers: ['Chrome'], singleRun: false,
+        browsers: ['PhantomJS'], singleRun: true,
+//        browsers: ['Chrome'], singleRun: false,
         autoWatch: false,
         background: false,
 
