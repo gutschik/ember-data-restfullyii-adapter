@@ -1,6 +1,5 @@
 module.exports = function (grunt) {
 
-
     grunt.initConfig({
         copy: {
             main: {
@@ -11,7 +10,6 @@ module.exports = function (grunt) {
     });
 
     require('load-grunt-config')(grunt);
-
 
     grunt.task.registerTask('release', ['bump-only', 'dist', 'usebanner:bump', 'copy:bump', 'bump-commit']);
     grunt.task.registerTask('test', ['dist', 'usebanner:distBanner', 'jshint', 'emberhandlebars', 'concat:test', 'karma']);
