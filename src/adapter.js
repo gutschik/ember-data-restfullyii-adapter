@@ -23,62 +23,33 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
     },
 
     createRecord: function(store, type, record) {
-        /*jshint debug:true*/
-//        debugger;
+
         var url = this.buildURL(type.typeKey);
         var data = store.serializerFor(type.typeKey).serialize(record);
         return this.ajax(url, "POST", { data: data });
     },
 
     updateRecord: function(store, type, record) {
-        /*jshint debug:true*/
-//        debugger;
 
-        var id = get(record, 'id');
-        var url = this.buildURL(type.typeKey, id);
-        var data = store.serializerFor(type.typeKey).serialize(record);
-
-        console.log(data);
-        return this.ajax(url, "PUT", { data: data });
-    },
-
-    deleteRecord: function(store, type, record) {
         var id = get(record, 'id'); //todo find pk (not always id)
         var url = this.buildURL(type.typeKey, id);
         var data = store.serializerFor(type.typeKey).serialize(record);
 
+        return this.ajax(url, "PUT", { data: data });
+    },
 
-        hash = {
-            data: data
-        };
+    deleteRecord: function(store, type, record) {
 
-        var adapter = this;
+        var id = get(record, 'id'); //todo find pk (not always id)
+        var url = this.buildURL(type.typeKey, id);
+        var data = store.serializerFor(type.typeKey).serialize(record);
 
-        return new Ember.RSVP.Promise(function(resolve, reject) {
-            hash = adapter.ajaxOptions(url, type, hash);
-
-            hash.success = function(json) {
-//                debugger;
-//                delete json;
-                Ember.run(null, resolve, json);
-            };
-
-            hash.error = function(jqXHR, textStatus, errorThrown) {
-//                debugger;
-
-                Ember.run(null, reject, adapter.ajaxError(jqXHR));
-            };
-
-            Ember.$.ajax(hash);
-        }, "DS: RestAdapter#ajax " + type + " to " + url);
-
+        return this.ajax(url, "DELETE", { data: data });
     },
 
     findMany: function(store, type, ids, parent) {
-        var url, endpoint, attribute;
 
-        /*jshint debug:true*/
-//        debugger;
+        var url, endpoint, attribute;
 
         if (parent) {
             attribute = this.getHasManyAttributeName(type, parent, ids);
@@ -94,9 +65,6 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
 
     ajax: function(url, type, hash) {
 
-        /*jshint debug:true*/
-//        debugger;
-
         hash = hash || {};
         hash.cache = false; // appends ?_=123455667 to avoid caching
         // hash.cache = false not working with POST/PUT/DELETE Requests, so....
@@ -110,12 +78,11 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
     },
 
     buildURL: function(type, id) {
-        var url = this._super(type, id);
 
+        var url = this._super(type, id);
         if (url.charAt(url.length - 1) !== '/') {
             url += '/';
         }
-
         return url;
     },
 
@@ -135,9 +102,7 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
 
         obj[k] = v;
         filter.push(obj);
-
         url = url + encodeURI('?filter=' + JSON.stringify(filter));
-
         return url;
     },
 
@@ -145,9 +110,7 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
         var root, url, parentValue, isManyMany;
 
         isManyMany = this.isManyManyRelation(type, parent);
-
         parentValue = parent.get('id'); //TODO find pk (not always id)
-
         if (isManyMany) {
             root = parent.constructor.typeKey;
             url = this.buildURL(root, parentValue);
@@ -160,7 +123,6 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
             url = this.buildURL(endpoint);
             url = this.addFilterToUrl(url, key, parentValue);
         }
-
         return url;
     },
 

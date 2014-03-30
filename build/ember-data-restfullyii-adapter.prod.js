@@ -7,6 +7,24 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
     },
 
     /**
+     @method normalizePayload
+     @param {subclass of DS.Model} type
+     @param {Object} hash
+     @returns {Object} the normalized payload
+     */
+    normalizePayload: function(primaryType, payload) {
+
+        var type = Ember.String.decamelize(primaryType.typeKey);
+        type = Ember.String.singularize(type);
+
+        if (payload && payload.data && payload.data[type]) {
+            payload = payload.data[type];
+        }
+
+        return payload;
+    },
+
+    /**
      `extractMeta` is used to deserialize any meta information in the
      adapter payload. By default Ember Data expects meta information to
      be located on the `meta` property of the payload object.
@@ -17,6 +35,7 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
      @param {Object} payload
      */
     extractMeta: function(store, type, payload) {
+
         if (payload && payload.data && payload.data.totalCount) {
             store.metaForType(type, { total: payload.data.totalCount });  // sets the metadata
             delete payload.data.totalCount;  // keeps ember data from trying to parse "totalCount" as a record
@@ -31,29 +50,6 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
     },
 
     /**
-     The `extract` method is used to deserialize payload data from the
-     server. By default the `JSONSerializer` does not push the records
-     into the store. However records that subclass `JSONSerializer`
-     such as the `RESTSerializer` may push records into the store as
-     part of the extract call.
-
-     This method deletegates to a more specific extract method based on
-     the `requestType`.
-
-     Example
-
-     ```javascript
-     var get = Ember.get;
-     socket.on('message', function(message) {
-      var modelName = message.model;
-      var data = message.data;
-      var type = store.modelFor(modelName);
-      var serializer = store.serializerFor(type.typeKey);
-      var record = serializer.extract(store, type, data, get(data, 'id'), 'single');
-      store.push(modelName, record);
-    });
-     ```
-
      @method extract
      @param {DS.Store} store
      @param {subclass of DS.Model} type
@@ -64,7 +60,6 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
      */
     extract: function(store, type, payload, id, requestType) {
 
-//        debugger;
         this.extractMeta(store, type, payload);
 
         payload = this.normalizePayload(type, payload);
@@ -73,16 +68,15 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
         return this[specificExtract](store, type, payload, id, requestType);
     },
 
+    /**
+     @method extractRESTFullYiiPayload
+     @param {DS.Store} store
+     @param {subclass of DS.Model} type
+     @param {Object} payload
+     */
     extractRESTFullYiiPayload: function(store, type, payload) {
 
         type.eachRelationship(function(key, relationship) {
-
-            /*jshint debug:true*/
-//            debugger;
-            /*jshint devel:true*/
-//            console.log(payload[key]);
-//            payload[key] = this.normalizePayload(type, payload[key]);
-
             if (!Ember.isNone(payload[key]) &&
                 typeof(payload[key][0]) !== 'number' &&
                 typeof(payload[key][0]) !== 'string' &&
@@ -102,76 +96,54 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
     },
 
     /**
-     You can use this method to normalize all payloads, regardless of whether they
-     represent single records or an array.
-
-     For example, you might want to remove some extraneous data from the payload:
-
-     ```js
-     App.ApplicationSerializer = DS.RESTSerializer.extend({
-        normalizePayload: function(type, payload) {
-            delete payload.version;
-            delete payload.status;
-            return payload;
-        }
-    });
-     ```
-
-     @method normalizePayload
+     @method extractSave
+     @param {DS.Store} store
      @param {subclass of DS.Model} type
-     @param {Object} hash
-     @returns {Object} the normalized payload
+     @param {Object} payload
+     @return {Object} json The deserialized payload
      */
-    normalizePayload: function(primaryType, payload) {
-
-        /*jshint debug:true*/
-//        debugger;
-
-        var type = Ember.String.decamelize(primaryType.typeKey);
-        type = Ember.String.singularize(type);
-
-        if (payload && payload.data && payload.data[type]) {
-            payload = payload.data[type];
-        }
-
-        return payload;
-    },
-
-
     extractSave: function(store, primaryType, payload) {
 
-//        payload = this.normalizePayload(primaryType, payload);
-
-        /*jshint debug:true*/
-//        debugger;
-
-        // using normalize from RESTSerializer applies transforms and allows
-        // us to define keyForAttribute and keyForRelationship to handle
-        // camelization correctly.
         this.normalize(primaryType, payload);
         this.extractRESTFullYiiPayload(store, primaryType, payload);
         return payload;
     },
 
+    /**
+     @method extractDeleteRecord
+     @param {DS.Store} store
+     @param {subclass of DS.Model} type
+     @param {Object} payload
+     @return {Object} json The deserialized payload
+     */
+    extractDeleteRecord: function(store, type, payload) {
+
+        payload = null;
+        return this.extractSave(store, type, payload);
+    },
+
+    /**
+     @method extractSingle
+     @param {DS.Store} store
+     @param {subclass of DS.Model} type
+     @param {Object} payload
+     @return {Object} json The deserialized payload
+     */
     extractSingle: function(store, primaryType, payload) {
 
-//        payload = this.normalizePayload(primaryType, payload);
-
-        /*jshint debug:true*/
-//        debugger;
-
-        // using normalize from RESTSerializer applies transforms and allows
-        // us to define keyForAttribute and keyForRelationship to handle
-        // camelization correctly.
         this.normalize(primaryType, payload);
         this.extractRESTFullYiiPayload(store, primaryType, payload);
         return payload;
     },
 
+    /**
+     @method extractFindAll
+     @param {DS.Store} store
+     @param {subclass of DS.Model} type
+     @param {Object} payload
+     @return {Array} array An array of deserialized objects
+     */
     extractFindAll: function(store, primaryType, payload) {
-
-        /*jshint debug:true*/
-//        debugger;
 
         var self = this;
         for (var j = 0; j < payload.length; j++) {
@@ -184,18 +156,14 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
         return payload;
     },
 
+    /**
+     @method extractArray
+     @param {DS.Store} store
+     @param {subclass of DS.Model} type
+     @param {Object} payload
+     @return {Array} array An array of deserialized objects
+     */
     extractArray: function(store, primaryType, payload) {
-
-//        payload = this.normalizePayload(primaryType, payload);
-
-        /*jshint debug:true*/
-//        debugger;
-
-
-        /*jshint devel:true*/
-//        console.log(type);
-
-//        debugger;
 
         var self = this;
         for (var j = 0; j < payload.length; j++) {
@@ -287,8 +255,6 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
      */
     serialize: function(record, options) {
 
-        /*jshint debug:true*/
-//        debugger;
         var json = {};
 
         if (options && options.includeId) {
@@ -389,62 +355,33 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
     },
 
     createRecord: function(store, type, record) {
-        /*jshint debug:true*/
-//        debugger;
+
         var url = this.buildURL(type.typeKey);
         var data = store.serializerFor(type.typeKey).serialize(record);
         return this.ajax(url, "POST", { data: data });
     },
 
     updateRecord: function(store, type, record) {
-        /*jshint debug:true*/
-//        debugger;
 
-        var id = get(record, 'id');
-        var url = this.buildURL(type.typeKey, id);
-        var data = store.serializerFor(type.typeKey).serialize(record);
-
-        console.log(data);
-        return this.ajax(url, "PUT", { data: data });
-    },
-
-    deleteRecord: function(store, type, record) {
         var id = get(record, 'id'); //todo find pk (not always id)
         var url = this.buildURL(type.typeKey, id);
         var data = store.serializerFor(type.typeKey).serialize(record);
 
+        return this.ajax(url, "PUT", { data: data });
+    },
 
-        hash = {
-            data: data
-        };
+    deleteRecord: function(store, type, record) {
 
-        var adapter = this;
+        var id = get(record, 'id'); //todo find pk (not always id)
+        var url = this.buildURL(type.typeKey, id);
+        var data = store.serializerFor(type.typeKey).serialize(record);
 
-        return new Ember.RSVP.Promise(function(resolve, reject) {
-            hash = adapter.ajaxOptions(url, type, hash);
-
-            hash.success = function(json) {
-//                debugger;
-//                delete json;
-                Ember.run(null, resolve, json);
-            };
-
-            hash.error = function(jqXHR, textStatus, errorThrown) {
-//                debugger;
-
-                Ember.run(null, reject, adapter.ajaxError(jqXHR));
-            };
-
-            Ember.$.ajax(hash);
-        }, "DS: RestAdapter#ajax " + type + " to " + url);
-
+        return this.ajax(url, "DELETE", { data: data });
     },
 
     findMany: function(store, type, ids, parent) {
-        var url, endpoint, attribute;
 
-        /*jshint debug:true*/
-//        debugger;
+        var url, endpoint, attribute;
 
         if (parent) {
             attribute = this.getHasManyAttributeName(type, parent, ids);
@@ -460,9 +397,6 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
 
     ajax: function(url, type, hash) {
 
-        /*jshint debug:true*/
-//        debugger;
-
         hash = hash || {};
         hash.cache = false; // appends ?_=123455667 to avoid caching
         // hash.cache = false not working with POST/PUT/DELETE Requests, so....
@@ -476,12 +410,11 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
     },
 
     buildURL: function(type, id) {
-        var url = this._super(type, id);
 
+        var url = this._super(type, id);
         if (url.charAt(url.length - 1) !== '/') {
             url += '/';
         }
-
         return url;
     },
 
@@ -501,9 +434,7 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
 
         obj[k] = v;
         filter.push(obj);
-
         url = url + encodeURI('?filter=' + JSON.stringify(filter));
-
         return url;
     },
 
@@ -511,9 +442,7 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
         var root, url, parentValue, isManyMany;
 
         isManyMany = this.isManyManyRelation(type, parent);
-
         parentValue = parent.get('id'); //TODO find pk (not always id)
-
         if (isManyMany) {
             root = parent.constructor.typeKey;
             url = this.buildURL(root, parentValue);
@@ -526,7 +455,6 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
             url = this.buildURL(endpoint);
             url = this.addFilterToUrl(url, key, parentValue);
         }
-
         return url;
     },
 
