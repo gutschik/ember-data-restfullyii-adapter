@@ -116,8 +116,8 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
      */
     extractDeleteRecord: function(store, type, payload) {
 
-        payload = null;
-        return this.extractSave(store, type, payload);
+        return null;
+//        return this.extractSave(store, type, payload);
     },
 
     /**
