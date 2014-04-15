@@ -312,13 +312,35 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
     serializeHasMany: function(record, json, relationship) {
 
         var key = relationship.key,
+      attrs = Ember.get(this, 'attrs'),
+      embed = attrs && attrs[key] && attrs[key].embedded === 'always',
             json_key = this.keyForRelationship(key, "hasMany"),
             relationshipType = DS.RelationshipChange.determineRelationshipType(
                 record.constructor, relationship);
 
         if (relationshipType === 'manyToNone' ||
-            relationshipType === 'manyToMany')
+      relationshipType === 'manyToMany') {
             json[json_key] = record.get(key).mapBy('id');
     }
+
+    if (embed) {
+      json[this.keyForAttribute(key)] = Ember.get(record, key).map(function(relation) {
+        var data = relation.serialize(),
+          primaryKey = Ember.get(this, 'primaryKey');
+
+        data[primaryKey] = Ember.get(relation, primaryKey);
+
+        return data;
+      }, this);
+
+      // remove newly created sub-resources to avoid duplicate entries since they
+      // will bei returned with an id from the REST API anyways
+      record.get(key).filterBy('isNew').forEach(function(item) {
+//          debugger;
+        item.deleteRecord();
+      });
+
+    }
+  }
 
 });
