@@ -12,7 +12,7 @@ DS.RESTFullYiiSerializer = DS.RESTSerializer.extend({
      */
     normalizePayload: function(primaryType, payload) {
 
-        var type = Ember.String.decamelize(primaryType.typeKey);
+        var type = Ember.String.underscore(primaryType.typeKey);
         type = Ember.String.singularize(type);
 
         if (payload && payload.data && payload.data[type]) {
