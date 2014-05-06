@@ -1,6 +1,8 @@
 ember-data-restfullyii-adapter
 ==============================
 
+# WARNING: WIP! Do not use, just yet :)
+
 An ember-data adapter for Yii web applications powered by the RESTFullYii API
 
 
