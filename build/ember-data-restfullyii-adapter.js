@@ -372,8 +372,8 @@ DS.RESTFullYiiAdapter = DS.RESTAdapter.extend({
      @returns String
      */
     pathForType: function(type) {
-        var decamelized = Ember.String.decamelize(type);
-        return Ember.String.singularize(decamelized);
+      var underscored = Ember.String.underscore(type);
+      return Ember.String.singularize(underscored);
     },
 
     createRecord: function(store, type, record) {
